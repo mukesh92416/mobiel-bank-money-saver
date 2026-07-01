@@ -1,4 +1,5 @@
 import { api } from '@/api/client'
+import { apiUrl } from '@/config/api'
 import type { Transaction, DepositInput, WithdrawInput, MonthlyReport } from '@/types'
 
 interface TransactionListResponse {
@@ -38,14 +39,10 @@ export const transactionService = {
     api.get<{ csv: string }>('/transactions/export', params as Record<string, string | undefined>),
 
   exportPdf: async (params?: { start_date?: string; end_date?: string }) => {
-    const token = localStorage.getItem('moneysaver-auth')
-    let accessToken = ''
-    if (token) {
-      try { accessToken = JSON.parse(token).state?.token || '' } catch {}
-    }
+    const token = localStorage.getItem('access_token')
     const query = params ? '?' + new URLSearchParams(params as Record<string, string>).toString() : ''
-    const res = await fetch(`/api/transactions/export-pdf${query}`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
+    const res = await fetch(apiUrl(`/api/transactions/export-pdf${query}`), {
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     })
     const blob = await res.blob()
     const url = URL.createObjectURL(blob)

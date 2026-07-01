@@ -1,4 +1,4 @@
-const API_BASE = '/api'
+import { apiUrl } from '@/config/api'
 
 interface RequestOptions {
   method?: string
@@ -25,7 +25,7 @@ function getAuthHeaders(): Record<string, string> {
 }
 
 function buildUrl(path: string, params?: Record<string, string | number | undefined>): string {
-  const url = new URL(`${API_BASE}${path}`, window.location.origin)
+  const url = new URL(apiUrl(`/api${path}`))
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined) {
@@ -67,6 +67,11 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   return response.json()
 }
 
+function getBaseUrl(): string {
+  const base = apiUrl('')
+  return base || window.location.origin
+}
+
 export const api = {
   get: <T>(path: string, params?: Record<string, string | number | undefined>) =>
     request<T>(path, { params }),
@@ -82,7 +87,7 @@ export const api = {
 
   upload: <T>(path: string, formData: FormData) => {
     const token = localStorage.getItem('access_token')
-    return fetch(`${API_BASE}${path}`, {
+    return fetch(`${getBaseUrl()}/api${path}`, {
       method: 'POST',
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
