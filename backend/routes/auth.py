@@ -45,8 +45,9 @@ def register():
     db.session.flush()
 
     from models import Setting
-    setting = Setting(user_id=user.id)
-    db.session.add(setting)
+    if not Setting.query.filter_by(user_id=user.id).first():
+        setting = Setting(user_id=user.id)
+        db.session.add(setting)
 
     db.session.commit()
 
