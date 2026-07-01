@@ -15,18 +15,17 @@ def build_upi_params(upi_id: str, name: str, amount: float | None = None, note: 
 
 def build_upi_url(upi_id: str, name: str, amount: float | None = None, note: str | None = None) -> str:
     params = build_upi_params(upi_id, name, amount, note)
-    query = urllib.parse.urlencode(params)
+    query = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
     return f"upi://pay?{query}"
 
 
 def build_payment_app_urls(upi_id: str, name: str, amount: float | None = None, note: str | None = None):
     params = build_upi_params(upi_id, name, amount, note)
-    query = urllib.parse.urlencode(params)
+    query = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
 
-    raw_whatsapp_text = f"upi://pay?pa={upi_id}&pn={name[:30]}&cu=INR"
+    raw_whatsapp_text = f"Pay via UPI: upi://pay?pa={urllib.parse.quote(upi_id)}&pn={urllib.parse.quote(name[:30])}&cu=INR"
     if amount and amount > 0:
         raw_whatsapp_text += f"&am={amount:.2f}"
-    raw_whatsapp_text = f"Pay via UPI: {raw_whatsapp_text}"
 
     return {
         "google_pay": f"upi://pay?{query}",

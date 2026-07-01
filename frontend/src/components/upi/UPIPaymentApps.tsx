@@ -71,11 +71,13 @@ export function UPIPaymentApps({
 }: UPIPaymentAppsProps) {
   const [copiedId, setCopiedId] = useState(false)
   const [copiedLink, setCopiedLink] = useState(false)
+  const [copiedDebug, setCopiedDebug] = useState(false)
 
   const apps = Object.entries(paymentApps) as [keyof PaymentApps, string][]
 
   const handleOpenApp = (url: string, appKey: string) => {
     onAppLaunch?.(appKey)
+    console.log('[UPI Debug] Launching URI:', url)
     const link = document.createElement('a')
     link.href = url
     link.target = '_blank'
@@ -179,6 +181,25 @@ export function UPIPaymentApps({
                 <>
                   <Link className="size-4" />
                   Copy Payment Link
+                </>
+              )}
+            </motion.button>
+          )}
+          {upiUrl && (
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              onClick={() => handleCopy(upiUrl, setCopiedDebug)}
+              className="flex items-center justify-center gap-2 w-full py-2 px-4 rounded-xl text-xs font-mono transition-all border border-dashed border-yellow-400/50 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-500/10"
+            >
+              {copiedDebug ? (
+                <>
+                  <Check className="size-3" />
+                  URI Copied
+                </>
+              ) : (
+                <>
+                  <Copy className="size-3" />
+                  Debug: Copy Raw UPI URI
                 </>
               )}
             </motion.button>
