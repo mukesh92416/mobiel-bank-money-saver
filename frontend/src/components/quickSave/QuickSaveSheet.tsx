@@ -351,6 +351,8 @@ export function QuickSaveSheet({ open, onClose }: QuickSaveSheetProps) {
                     paymentApps={upiData.payment_apps}
                     upiUrl={upiData.upi_url}
                     upiId={upiData.upi_id}
+                    upiName={upiData.upi_name}
+                    amount={upiData.amount}
                     onAppLaunch={() => setAppLaunchTime(Date.now())}
                   />
                 </div>

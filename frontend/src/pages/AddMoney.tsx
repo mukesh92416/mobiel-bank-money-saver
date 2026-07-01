@@ -475,6 +475,9 @@ export default function AddMoney() {
               paymentApps={upiData.payment_apps}
               upiUrl={upiData.upi_url}
               upiId={upiData.upi_id}
+              upiName={upiData.upi_name}
+              amount={upiData.amount}
+              note={submittedData?.notes}
               onAppLaunch={() => setAppLaunchTime(Date.now())}
             />
           </motion.div>

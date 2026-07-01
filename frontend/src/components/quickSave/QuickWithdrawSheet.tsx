@@ -365,6 +365,8 @@ export function QuickWithdrawSheet({ open, onClose }: QuickWithdrawSheetProps) {
                     paymentApps={upiData.payment_apps}
                     upiUrl={upiData.upi_url}
                     upiId={upiData.upi_id}
+                    upiName={upiData.upi_name}
+                    amount={upiData.amount}
                     onAppLaunch={() => setWithdrawAppLaunchTime(Date.now())}
                   />
                 </div>

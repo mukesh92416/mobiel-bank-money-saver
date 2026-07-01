@@ -499,6 +499,9 @@ export default function WithdrawMoney() {
               paymentApps={upiData.payment_apps}
               upiUrl={upiData.upi_url}
               upiId={upiData.upi_id}
+              upiName={upiData.upi_name}
+              amount={upiData.amount}
+              note={submittedData?.notes}
               onAppLaunch={() => setWithdrawAppLaunchTime(Date.now())}
             />
           </motion.div>
