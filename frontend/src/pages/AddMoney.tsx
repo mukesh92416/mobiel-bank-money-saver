@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { ArrowLeft, Sparkles, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, Sparkles, AlertCircle, CheckCircle2, HandCoins } from 'lucide-react'
 import { transactionService } from '@/services/transactionService'
 import { goalService } from '@/services/goalService'
 import { upiService } from '@/services/upiService'
@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { UPIQrCode } from '@/components/upi/UPIQrCode'
 import { UPIPaymentApps } from '@/components/upi/UPIPaymentApps'
-import { UPIConfirmation } from '@/components/upi/UPIConfirmation'
+import { AmountConfirmationDialog } from '@/components/upi/AmountConfirmationDialog'
 import { cn } from '@/utils/cn'
 import { formatCurrency } from '@/utils/format'
 import { pageVariants, slideUp, staggerContainer, staggerItem } from '@/animations'
@@ -75,6 +75,7 @@ export default function AddMoney() {
   const [step, setStep] = useState<'form' | 'upi' | 'confirm'>('form')
   const [upiData, setUpiData] = useState<UpiGenerateResponse | null>(null)
   const [showSuccess, setShowSuccess] = useState(false)
+  const [showAmountDialog, setShowAmountDialog] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submittedData, setSubmittedData] = useState<Step1Form | null>(null)
 
@@ -159,14 +160,15 @@ export default function AddMoney() {
     })
   }
 
-  function handlePaymentConfirmed() {
+  function handlePaymentConfirmed(actualAmount: number) {
     if (!submittedData) return
     setError(null)
+    setShowAmountDialog(false)
     setStep('confirm')
     const pendingSession = useQuickSaveStore.getState().sessions.find((s) => s.status === 'pending')
     if (pendingSession) updateSession(pendingSession.id, { status: 'confirmed' })
     depositMutation.mutate({
-      amount: submittedData.amount,
+      amount: actualAmount,
       goal_id: submittedData.goal_id || null,
       transaction_date: submittedData.transaction_date,
       notes: submittedData.notes || undefined,
@@ -244,12 +246,14 @@ export default function AddMoney() {
       variants={pageVariants}
       className="pb-28 px-4 pt-4 space-y-5"
     >
-      <UPIConfirmation
-        open={step === 'confirm'}
-        onConfirm={() => {}}
-        onCancel={handlePaymentCancelled}
-        amount={submittedData?.amount ?? 0}
-        isProcessing={depositMutation.isPending}
+      <AmountConfirmationDialog
+        open={showAmountDialog}
+        onClose={() => setShowAmountDialog(false)}
+        onConfirm={handlePaymentConfirmed}
+        title="Confirm Deposit"
+        icon={<HandCoins className="size-4" />}
+        confirmLabel="Confirm Deposit"
+        loading={depositMutation.isPending}
       />
 
       {step === 'form' && (
@@ -487,7 +491,7 @@ export default function AddMoney() {
               variant="primary"
               size="lg"
               fullWidth
-              onClick={handlePaymentConfirmed}
+              onClick={() => setShowAmountDialog(true)}
               leftIcon={<CheckCircle2 className="size-4" />}
             >
               I Completed the Payment
