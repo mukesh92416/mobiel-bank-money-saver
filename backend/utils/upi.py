@@ -1,0 +1,41 @@
+import urllib.parse
+
+
+def build_upi_params(upi_id: str, name: str, amount: float | None = None, note: str | None = None) -> dict:
+    params = {
+        "pa": upi_id,
+        "pn": name[:30] if name else "MoneySaver",
+        "tn": (note or "Savings deposit")[:50],
+        "cu": "INR",
+    }
+    if amount and amount > 0:
+        params["am"] = f"{amount:.2f}"
+    return params
+
+
+def build_upi_url(upi_id: str, name: str, amount: float | None = None, note: str | None = None) -> str:
+    params = build_upi_params(upi_id, name, amount, note)
+    query = urllib.parse.urlencode(params)
+    return f"upi://pay?{query}"
+
+
+def build_payment_app_urls(upi_id: str, name: str, amount: float | None = None, note: str | None = None):
+    params = build_upi_params(upi_id, name, amount, note)
+    query = urllib.parse.urlencode(params)
+
+    raw_whatsapp_text = f"upi://pay?pa={upi_id}&pn={name[:30]}&cu=INR"
+    if amount and amount > 0:
+        raw_whatsapp_text += f"&am={amount:.2f}"
+    raw_whatsapp_text = f"Pay via UPI: {raw_whatsapp_text}"
+
+    return {
+        "google_pay": f"tez://upi/pay?{query}",
+        "phone_pe": f"phonepe://pay?{query}",
+        "paytm": f"paytmmp://pay?{query}",
+        "bhim": f"bhim://upi/pay?{query}",
+        "whatsapp": f"https://wa.me/?text={urllib.parse.quote(raw_whatsapp_text)}",
+    }
+
+
+def generate_qr_content(upi_id: str, name: str, amount: float | None = None, note: str | None = None) -> str:
+    return build_upi_url(upi_id, name, amount, note)
