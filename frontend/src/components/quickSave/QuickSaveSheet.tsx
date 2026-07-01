@@ -18,7 +18,7 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/utils/cn'
 import { formatCurrency } from '@/utils/format'
-import { openAppDeepLink } from '@/utils/upi'
+import { openAppDeepLink, UPI_APP_PACKAGES } from '@/utils/upi'
 import type { UpiGenerateResponse } from '@/types'
 
 interface QuickSaveSheetProps {
@@ -75,7 +75,9 @@ export function QuickSaveSheet({ open, onClose }: QuickSaveSheetProps) {
 
   const openPreferredApp = useCallback((data: UpiGenerateResponse) => {
     const pref = upiSettings?.preferred_upi_app
-    if (pref && pref !== '' && data.payment_apps[pref as keyof typeof data.payment_apps]) {
+    if (pref && pref !== '' && UPI_APP_PACKAGES[pref] && data.upi_url) {
+      openAppDeepLink(data.upi_url, UPI_APP_PACKAGES[pref]!)
+    } else if (pref && pref !== '' && data.payment_apps[pref as keyof typeof data.payment_apps]) {
       openAppDeepLink(data.payment_apps[pref as keyof typeof data.payment_apps])
     } else if (data.upi_url) {
       openAppDeepLink(data.upi_url)

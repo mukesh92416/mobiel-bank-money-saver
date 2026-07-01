@@ -17,7 +17,7 @@ import { Card } from '@/components/ui/Card'
 import { PaymentQRDialog } from '@/components/upi/PaymentQRDialog'
 import { cn } from '@/utils/cn'
 import { staggerContainer, staggerItem } from '@/animations'
-import { copyToClipboard, openAppDeepLink } from '@/utils/upi'
+import { copyToClipboard, openAppDeepLink, UPI_APP_PACKAGES } from '@/utils/upi'
 
 interface PaymentApps {
   google_pay: string
@@ -98,11 +98,15 @@ export function UPIPaymentApps({
 
   const apps = Object.entries(paymentApps) as [keyof PaymentApps, string][]
 
-  const handleOpenApp = (url: string, appKey: string) => {
+  const handleOpenApp = async (appKey: keyof PaymentApps) => {
     onAppLaunch?.(appKey)
     setSheetOpen(false)
-    console.log('[UPI Debug] Launching URI:', url)
-    openAppDeepLink(url)
+    const url = upiUrl || paymentApps[appKey]
+    const packageName = UPI_APP_PACKAGES[appKey] ?? undefined
+    console.log('[UPI Debug] Selected app:', appKey)
+    console.log('[UPI Debug] Package:', packageName ?? '(none)')
+    console.log('[UPI Debug] URI:', url)
+    await openAppDeepLink(url, packageName)
   }
 
   const handleCopy = async (text: string, setter: (v: boolean) => void) => {
@@ -187,14 +191,14 @@ export function UPIPaymentApps({
 
               <div className="p-5 space-y-4">
                 <div className="grid grid-cols-2 gap-3">
-                  {apps.filter(([key]) => key !== 'whatsapp').map(([key, url]) => {
+                  {apps.filter(([key]) => key !== 'whatsapp').map(([key]) => {
                     const meta = appMeta[key]
                     return (
                       <motion.button
                         key={key}
                         whileHover={{ scale: 1.03 }}
                         whileTap={{ scale: 0.97 }}
-                        onClick={() => handleOpenApp(url, key)}
+                        onClick={() => handleOpenApp(key)}
                         className={cn(
                           'flex flex-col items-center justify-center gap-2 p-4 rounded-xl',
                           'bg-gradient-to-br border border-white/20 dark:border-gray-700/30',

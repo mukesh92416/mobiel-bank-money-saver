@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { ArrowLeft, ArrowDownFromLine, AlertCircle, CheckCircle2, HandCoins } from 'lucide-react'
+import { ArrowLeft, ArrowDownFromLine, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { transactionService } from '@/services/transactionService'
 import { goalService } from '@/services/goalService'
 import { analyticsService } from '@/services/analyticsService'
@@ -16,7 +16,6 @@ import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { UPIQrCode } from '@/components/upi/UPIQrCode'
 import { UPIPaymentApps } from '@/components/upi/UPIPaymentApps'
-import { AmountConfirmationDialog } from '@/components/upi/AmountConfirmationDialog'
 import { cn } from '@/utils/cn'
 import { formatCurrency } from '@/utils/format'
 import { pageVariants, slideUp, staggerContainer, staggerItem } from '@/animations/index'
@@ -73,7 +72,6 @@ export default function WithdrawMoney() {
   const [step, setStep] = useState<'form' | 'upi' | 'confirm'>('form')
   const [upiData, setUpiData] = useState<UpiGenerateResponse | null>(null)
   const [showSuccess, setShowSuccess] = useState(false)
-  const [showAmountDialog, setShowAmountDialog] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submittedData, setSubmittedData] = useState<Step1Form | null>(null)
 
@@ -166,15 +164,14 @@ export default function WithdrawMoney() {
     })
   }
 
-  function handleWithdrawConfirmed(actualAmount: number) {
+  function handleWithdrawConfirmed() {
     if (!submittedData) return
     setError(null)
-    setShowAmountDialog(false)
     setStep('confirm')
     const pendingSession = useQuickSaveStore.getState().withdrawSessions.find((s) => s.status === 'pending')
     if (pendingSession) updateWithdrawSession(pendingSession.id, { status: 'confirmed' })
     withdrawMutation.mutate({
-      amount: actualAmount,
+      amount: submittedData.amount,
       goal_id: submittedData.goal_id || null,
       transaction_date: submittedData.transaction_date,
       notes: submittedData.notes || undefined,
@@ -252,15 +249,6 @@ export default function WithdrawMoney() {
       variants={pageVariants}
       className="pb-28 px-4 pt-4 space-y-5"
     >
-      <AmountConfirmationDialog
-        open={showAmountDialog}
-        onClose={() => setShowAmountDialog(false)}
-        onConfirm={handleWithdrawConfirmed}
-        title="Confirm Withdrawal"
-        icon={<ArrowDownFromLine className="size-4" />}
-        confirmLabel="Confirm Withdrawal"
-        loading={withdrawMutation.isPending}
-      />
       {step === 'form' && (
         <>
           <motion.div variants={slideUp} initial="initial" animate="animate">
@@ -523,7 +511,7 @@ export default function WithdrawMoney() {
               variant="danger"
               size="lg"
               fullWidth
-              onClick={() => setShowAmountDialog(true)}
+              onClick={handleWithdrawConfirmed}
               leftIcon={<CheckCircle2 className="size-4" />}
             >
               I Completed the Transfer
