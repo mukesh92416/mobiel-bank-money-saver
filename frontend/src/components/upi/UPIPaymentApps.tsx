@@ -17,7 +17,7 @@ import { Card } from '@/components/ui/Card'
 import { PaymentQRDialog } from '@/components/upi/PaymentQRDialog'
 import { cn } from '@/utils/cn'
 import { staggerContainer, staggerItem } from '@/animations'
-import { copyToClipboard } from '@/utils/upi'
+import { copyToClipboard, openAppDeepLink } from '@/utils/upi'
 
 interface PaymentApps {
   google_pay: string
@@ -102,13 +102,7 @@ export function UPIPaymentApps({
     onAppLaunch?.(appKey)
     setSheetOpen(false)
     console.log('[UPI Debug] Launching URI:', url)
-    const link = document.createElement('a')
-    link.href = url
-    link.target = '_blank'
-    link.rel = 'noopener noreferrer'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+    openAppDeepLink(url)
   }
 
   const handleCopy = async (text: string, setter: (v: boolean) => void) => {

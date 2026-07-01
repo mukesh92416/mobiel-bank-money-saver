@@ -1,42 +1,47 @@
-import type { PlatformInterface, PlatformType } from '@/services/interfaces/platform'
+import { Capacitor } from '@capacitor/core'
 
-function detectPlatform(): PlatformType {
-  if (typeof window === 'undefined') return 'web'
-  const ua = navigator.userAgent || ''
-  if (/android/i.test(ua) && /wv/.test(ua)) return 'android'
-  if (/iphone|ipad|ipod/i.test(ua)) return 'ios'
-  if (/macintosh|windows/i.test(ua) && !('ontouchend' in document)) return 'desktop'
-  return 'web'
-}
+export type Platform = 'web' | 'pwa' | 'android' | 'ios'
 
-function detectCapacitor(): boolean {
-  return typeof (window as any)?.Capacitor !== 'undefined'
-}
+class PlatformService {
+  private _platform: Platform
 
-export const platformService: PlatformInterface = {
-  getType(): PlatformType {
-    if (detectCapacitor()) {
-      const cap = (window as any).Capacitor
-      const platform = cap?.getPlatform?.() || 'web'
-      if (platform === 'android') return 'android'
-      if (platform === 'ios') return 'ios'
+  constructor() {
+    this._platform = this.detect()
+  }
+
+  private detect(): Platform {
+    if (Capacitor.isNativePlatform()) {
+      return Capacitor.getPlatform() as Platform
     }
-    return detectPlatform()
-  },
+    if (typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches) {
+      return 'pwa'
+    }
+    return 'web'
+  }
 
-  isNative(): boolean {
-    return detectCapacitor() || this.getType() === 'android' || this.getType() === 'ios'
-  },
+  get platform(): Platform {
+    return this._platform
+  }
 
-  isStandalone(): boolean {
-    if (typeof window === 'undefined') return false
-    return (
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone === true
-    )
-  },
+  get isNative(): boolean {
+    return Capacitor.isNativePlatform()
+  }
 
-  getVersion(): string {
-    return '1.0.0'
-  },
+  get isAndroid(): boolean {
+    return this._platform === 'android'
+  }
+
+  get isIOS(): boolean {
+    return this._platform === 'ios'
+  }
+
+  get isWeb(): boolean {
+    return !Capacitor.isNativePlatform()
+  }
+
+  get isPWA(): boolean {
+    return this._platform === 'pwa'
+  }
 }
+
+export const platformService = new PlatformService()
