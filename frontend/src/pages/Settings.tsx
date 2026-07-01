@@ -30,6 +30,9 @@ import {
   Clock,
   Globe,
   Save,
+  Camera,
+  ClipboardPaste,
+  QrCode,
 } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -39,6 +42,8 @@ import { useAuthStore } from '@/store/authStore'
 import { useQuickSaveStore } from '@/store/quickSaveStore'
 import { settingsService } from '@/services/settingsService'
 import { authService } from '@/services/authService'
+import { UPIImportDialog } from '@/components/upi/UPIImportDialog'
+import { parseUpiUri, type ParsedUpiUri } from '@/utils/upi'
 import { cn } from '@/utils/cn'
 import { pageVariants, staggerContainer, staggerItem } from '@/animations/index'
 
@@ -133,6 +138,8 @@ export default function Settings() {
   const [wdUpiCopied, setWdUpiCopied] = useState(false)
   const [withdrawalUpiErrors, setWithdrawalUpiErrors] = useState<Record<string, string>>({})
   const [withdrawalSaveSuccess, setWithdrawalSaveSuccess] = useState(false)
+  const [showDepositImport, setShowDepositImport] = useState(false)
+  const [showWithdrawalImport, setShowWithdrawalImport] = useState(false)
 
   const qsPresets = useQuickSaveStore((s) => s.presets)
   const qsConfig = useQuickSaveStore((s) => s.config)
@@ -192,6 +199,26 @@ export default function Settings() {
     }
     setWithdrawalUpiErrors(errors)
     return Object.keys(errors).length === 0
+  }
+
+  function handleDepositImport(data: ParsedUpiUri) {
+    setUpiForm(prev => ({
+      ...prev,
+      upi_id: data.pa,
+      upi_name: data.pn ? decodeURIComponent(data.pn) : prev.upi_name,
+      default_save_note: data.tn ? decodeURIComponent(data.tn) : prev.default_save_note,
+    }))
+    setShowDepositImport(false)
+  }
+
+  function handleWithdrawalImport(data: ParsedUpiUri) {
+    setWithdrawalUpiForm(prev => ({
+      ...prev,
+      withdrawal_upi_id: data.pa,
+      withdrawal_upi_name: data.pn ? decodeURIComponent(data.pn) : prev.withdrawal_upi_name,
+      withdrawal_default_note: data.tn ? decodeURIComponent(data.tn) : prev.withdrawal_default_note,
+    }))
+    setShowWithdrawalImport(false)
   }
 
   function handleSaveWithdrawalUpi() {
@@ -465,6 +492,24 @@ export default function Settings() {
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 -mt-1">
               Money moves INTO your savings account
             </p>
+            <div className="flex gap-2 mb-4">
+              <button
+                type="button"
+                onClick={() => setShowDepositImport(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+              >
+                <Camera className="size-3.5" />
+                Scan QR
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowDepositImport(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+              >
+                <ClipboardPaste className="size-3.5" />
+                Paste Link
+              </button>
+            </div>
             <div className="space-y-3">
               <div>
                 <label className="text-xs font-medium text-gray-500 dark:text-gray-400">UPI ID</label>
@@ -538,6 +583,12 @@ export default function Settings() {
           </Card>
         </motion.div>
 
+        <UPIImportDialog
+          open={showDepositImport}
+          onClose={() => setShowDepositImport(false)}
+          onImport={handleDepositImport}
+        />
+
         <motion.div variants={staggerItem}>
           <Card variant="glass" padding="md">
             <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
@@ -557,6 +608,25 @@ export default function Settings() {
                 </div>
               </div>
             )}
+
+            <div className="flex gap-2 mb-4">
+              <button
+                type="button"
+                onClick={() => setShowWithdrawalImport(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-500/10 transition-colors"
+              >
+                <Camera className="size-3.5" />
+                Scan QR
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowWithdrawalImport(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-500/10 transition-colors"
+              >
+                <ClipboardPaste className="size-3.5" />
+                Paste Link
+              </button>
+            </div>
 
             <div className="space-y-3">
               <div>
@@ -671,6 +741,12 @@ export default function Settings() {
             </div>
           </Card>
         </motion.div>
+
+        <UPIImportDialog
+          open={showWithdrawalImport}
+          onClose={() => setShowWithdrawalImport(false)}
+          onImport={handleWithdrawalImport}
+        />
 
         <motion.div variants={staggerItem}>
           <Card variant="glass" padding="md">
