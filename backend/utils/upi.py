@@ -29,10 +29,10 @@ def build_payment_app_urls(upi_id: str, name: str, amount: float | None = None, 
     raw_whatsapp_text = f"Pay via UPI: {raw_whatsapp_text}"
 
     return {
-        "google_pay": f"tez://upi/pay?{query}",
-        "phone_pe": f"phonepe://pay?{query}",
-        "paytm": f"paytmmp://pay?{query}",
-        "bhim": f"bhim://upi/pay?{query}",
+        "google_pay": f"upi://pay?{query}",
+        "phone_pe": f"upi://pay?{query}",
+        "paytm": f"upi://pay?{query}",
+        "bhim": f"upi://pay?{query}",
         "whatsapp": f"https://wa.me/?text={urllib.parse.quote(raw_whatsapp_text)}",
     }
 

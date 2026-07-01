@@ -216,6 +216,15 @@ class Setting(TimestampMixin, db.Model):
     withdrawal_default_note = db.Column(db.String(200), nullable=True)
     auto_lock_minutes = db.Column(db.Integer, default=0)
 
+    reminder_enabled = db.Column(db.Boolean, default=False)
+    reminder_time = db.Column(db.String(5), default="09:00")
+    reminder_frequency = db.Column(db.String(20), default="daily")
+    reminder_days = db.Column(db.Text, nullable=True)
+    reminder_amount = db.Column(db.Float, default=0.0)
+    reminder_title = db.Column(db.String(200), default="Money Vault Reminder")
+    reminder_message = db.Column(db.String(500), default="Don't forget today's savings!")
+    reminder_timezone = db.Column(db.String(50), default="UTC")
+
     def to_dict(self):
         return {
             "id": self.id,
@@ -240,6 +249,14 @@ class Setting(TimestampMixin, db.Model):
             "withdrawal_default_amount": self.withdrawal_default_amount,
             "withdrawal_default_note": self.withdrawal_default_note,
             "auto_lock_minutes": self.auto_lock_minutes,
+            "reminder_enabled": self.reminder_enabled,
+            "reminder_time": self.reminder_time,
+            "reminder_frequency": self.reminder_frequency,
+            "reminder_days": self.reminder_days,
+            "reminder_amount": self.reminder_amount,
+            "reminder_title": self.reminder_title,
+            "reminder_message": self.reminder_message,
+            "reminder_timezone": self.reminder_timezone,
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),
         }

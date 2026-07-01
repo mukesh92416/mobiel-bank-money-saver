@@ -103,6 +103,10 @@ export const router = createBrowserRouter([
     ),
   },
   {
+    path: '/share',
+    element: <Navigate to="/add" replace />,
+  },
+  {
     element: <ProtectedLayout />,
     children: [
       { path: '/dashboard', element: <LazyPage Component={Dashboard} /> },

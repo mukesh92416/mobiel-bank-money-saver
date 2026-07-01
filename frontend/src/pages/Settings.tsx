@@ -26,6 +26,10 @@ import {
   GripVertical,
   ArrowDownFromLine,
   HandCoins,
+  Bell,
+  Clock,
+  Globe,
+  Save,
 } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -84,6 +88,29 @@ export default function Settings() {
     goal_reminder: settings?.goal_reminder ?? true,
     achievement_notification: settings?.achievement_notification ?? true,
     monthly_report: settings?.monthly_report ?? true,
+  })
+
+  const detectTimezone = () => {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone
+    } catch {
+      return 'UTC'
+    }
+  }
+
+  const [reminder, setReminder] = useState({
+    reminder_enabled: settings?.reminder_enabled ?? false,
+    reminder_time: settings?.reminder_time ?? '09:00',
+    reminder_frequency: settings?.reminder_frequency ?? 'daily' as const,
+    reminder_days: settings?.reminder_days ?? '',
+    reminder_amount: settings?.reminder_amount ?? 0,
+    reminder_title: settings?.reminder_title ?? 'Money Vault Reminder',
+    reminder_message: settings?.reminder_message ?? "Don't forget today's savings!",
+    reminder_timezone: settings?.reminder_timezone ?? detectTimezone(),
+  })
+
+  const [reminderDays, setReminderDays] = useState<string[]>(() => {
+    return reminder.reminder_days ? reminder.reminder_days.split(',').filter(Boolean) : []
   })
 
   const [upiForm, setUpiForm] = useState({
@@ -246,6 +273,36 @@ export default function Settings() {
     const updated = { ...notifications, [key]: !notifications[key] }
     setNotifications(updated)
     updateSettingsMutation.mutate(updated)
+  }
+
+  function handleReminderChange<K extends keyof typeof reminder>(key: K, value: (typeof reminder)[K]) {
+    setReminder(prev => ({ ...prev, [key]: value }))
+    const payload: Record<string, unknown> = { [key]: value }
+    if (key === 'reminder_days') {
+      payload.reminder_days = reminderDays.join(',')
+    }
+    updateSettingsMutation.mutate(payload as Partial<NonNullable<typeof settings>>)
+  }
+
+  function handleReminderDayToggle(day: string) {
+    const next = reminderDays.includes(day)
+      ? reminderDays.filter(d => d !== day)
+      : [...reminderDays, day]
+    setReminderDays(next)
+    updateSettingsMutation.mutate({ reminder_days: next.join(',') } as Partial<NonNullable<typeof settings>>)
+  }
+
+  function handleSaveReminder() {
+    updateSettingsMutation.mutate({
+      reminder_enabled: reminder.reminder_enabled,
+      reminder_time: reminder.reminder_time,
+      reminder_frequency: reminder.reminder_frequency,
+      reminder_days: reminderDays.join(','),
+      reminder_amount: reminder.reminder_amount,
+      reminder_title: reminder.reminder_title,
+      reminder_message: reminder.reminder_message,
+      reminder_timezone: reminder.reminder_timezone,
+    } as Partial<NonNullable<typeof settings>>)
   }
 
   function handleBackup() {
@@ -1031,6 +1088,162 @@ export default function Settings() {
                 onChange={() => handleNotifToggle('monthly_report')}
               />
             </SettingRow>
+          </Card>
+        </motion.div>
+
+        <motion.div variants={staggerItem}>
+          <Card variant="glass" padding="md">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+              <Bell className="size-4 inline mr-1.5 text-purple-500" />
+              Smart Reminder
+            </h2>
+            <SettingRow label="Enable Reminder" description="Receive daily push reminders to save">
+              <ToggleSwitch
+                checked={reminder.reminder_enabled}
+                onChange={() => handleReminderChange('reminder_enabled', !reminder.reminder_enabled)}
+              />
+            </SettingRow>
+
+            <div className="py-3 border-b border-gray-100 dark:border-gray-700/50">
+              <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 block">
+                <Clock className="size-3 inline mr-1" />
+                Reminder Time
+              </label>
+              <input
+                type="time"
+                value={reminder.reminder_time}
+                onChange={(e) => handleReminderChange('reminder_time', e.target.value)}
+                className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+              />
+            </div>
+
+            <div className="py-3 border-b border-gray-100 dark:border-gray-700/50">
+              <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 block">
+                Reminder Frequency
+              </label>
+              <select
+                value={reminder.reminder_frequency}
+                onChange={(e) => handleReminderChange('reminder_frequency', e.target.value as typeof reminder.reminder_frequency)}
+                className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+              >
+                <option value="daily">Daily</option>
+                <option value="weekdays">Weekdays</option>
+                <option value="weekends">Weekends</option>
+                <option value="custom">Custom Days</option>
+              </select>
+            </div>
+
+            {reminder.reminder_frequency === 'custom' && (
+              <div className="py-3 border-b border-gray-100 dark:border-gray-700/50">
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 block">
+                  Select Days
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { value: '1', label: 'Mon' },
+                    { value: '2', label: 'Tue' },
+                    { value: '3', label: 'Wed' },
+                    { value: '4', label: 'Thu' },
+                    { value: '5', label: 'Fri' },
+                    { value: '6', label: 'Sat' },
+                    { value: '0', label: 'Sun' },
+                  ].map((day) => (
+                    <button
+                      key={day.value}
+                      type="button"
+                      onClick={() => handleReminderDayToggle(day.value)}
+                      className={cn(
+                        'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border',
+                        reminderDays.includes(day.value)
+                          ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600',
+                      )}
+                    >
+                      {day.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="py-3 border-b border-gray-100 dark:border-gray-700/50">
+              <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 block">
+                Reminder Amount (Optional)
+              </label>
+              <input
+                type="number"
+                min="0"
+                placeholder="0"
+                value={reminder.reminder_amount || ''}
+                onChange={(e) => handleReminderChange('reminder_amount', Math.max(0, Number(e.target.value)))}
+                className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500/50 w-32"
+              />
+            </div>
+
+            <div className="py-3 border-b border-gray-100 dark:border-gray-700/50">
+              <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 block">
+                Reminder Title
+              </label>
+              <input
+                type="text"
+                value={reminder.reminder_title}
+                onChange={(e) => handleReminderChange('reminder_title', e.target.value)}
+                className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+              />
+            </div>
+
+            <div className="py-3 border-b border-gray-100 dark:border-gray-700/50">
+              <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 block">
+                Reminder Message
+              </label>
+              <input
+                type="text"
+                value={reminder.reminder_message}
+                onChange={(e) => handleReminderChange('reminder_message', e.target.value)}
+                className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+              />
+            </div>
+
+            <div className="py-3 border-b border-gray-100 dark:border-gray-700/50">
+              <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 block">
+                <Globe className="size-3 inline mr-1" />
+                Time Zone
+              </label>
+              <select
+                value={reminder.reminder_timezone}
+                onChange={(e) => handleReminderChange('reminder_timezone', e.target.value)}
+                className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+              >
+                <option value="UTC">UTC</option>
+                <option value="US/Eastern">US/Eastern (ET)</option>
+                <option value="US/Central">US/Central (CT)</option>
+                <option value="US/Mountain">US/Mountain (MT)</option>
+                <option value="US/Pacific">US/Pacific (PT)</option>
+                <option value="Europe/London">Europe/London (GMT/BST)</option>
+                <option value="Europe/Berlin">Europe/Berlin (CET)</option>
+                <option value="Europe/Paris">Europe/Paris (CET)</option>
+                <option value="Europe/Moscow">Europe/Moscow (MSK)</option>
+                <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
+                <option value="Asia/Dubai">Asia/Dubai (GST)</option>
+                <option value="Asia/Singapore">Asia/Singapore (SGT)</option>
+                <option value="Asia/Hong_Kong">Asia/Hong_Kong (HKT)</option>
+                <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
+                <option value="Asia/Shanghai">Asia/Shanghai (CST)</option>
+                <option value="Australia/Sydney">Australia/Sydney (AEST)</option>
+                <option value="Pacific/Auckland">Pacific/Auckland (NZST)</option>
+                <option value="America/Sao_Paulo">America/Sao_Paulo (BRT)</option>
+                <option value="America/Argentina/Buenos_Aires">America/Buenos_Aires (ART)</option>
+                <option value="Africa/Cairo">Africa/Cairo (EET)</option>
+                <option value="Africa/Lagos">Africa/Lagos (WAT)</option>
+              </select>
+            </div>
+
+            <div className="pt-3">
+              <Button variant="primary" size="sm" onClick={handleSaveReminder} fullWidth>
+                <Save className="size-4 mr-1.5 inline" />
+                Save Reminder Settings
+              </Button>
+            </div>
           </Card>
         </motion.div>
 

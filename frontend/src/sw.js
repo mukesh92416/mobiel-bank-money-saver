@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v2'
+const CACHE_VERSION = 'v3'
 const STATIC_CACHE = `moneysaver-static-${CACHE_VERSION}`
 const API_CACHE = `moneysaver-api-${CACHE_VERSION}`
 const DYNAMIC_CACHE = `moneysaver-dynamic-${CACHE_VERSION}`
@@ -123,7 +123,12 @@ self.addEventListener('fetch', (event) => {
 
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request).catch(() =>
+      fetch(request).then((response) => {
+        if (response.status === 404 || response.status >= 500) {
+          return caches.match('/').then((r) => r || caches.match(OFFLINE_URL))
+        }
+        return response
+      }).catch(() =>
         caches.match('/').then((r) => r || caches.match(OFFLINE_URL))
       )
     )

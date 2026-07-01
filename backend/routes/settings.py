@@ -37,7 +37,10 @@ def update_settings():
                   "upi_id", "upi_name", "preferred_upi_app", "default_save_note",
                   "withdrawal_upi_id", "withdrawal_upi_name",
                   "withdrawal_preferred_upi_app", "withdrawal_default_note",
-                  "auto_lock_minutes"]:
+                  "auto_lock_minutes",
+                  "reminder_enabled", "reminder_time", "reminder_frequency",
+                  "reminder_days", "reminder_title", "reminder_message",
+                  "reminder_timezone"]:
         if field in data:
             setattr(setting, field, data[field])
 
@@ -46,6 +49,34 @@ def update_settings():
 
     if "withdrawal_default_amount" in data:
         setting.withdrawal_default_amount = float(data["withdrawal_default_amount"])
+
+    if "reminder_amount" in data:
+        val = float(data["reminder_amount"])
+        if val < 0:
+            return jsonify({"error": "Reminder amount must be 0 or greater"}), 400
+        setting.reminder_amount = val
+
+    if "reminder_time" in data:
+        import re
+        if not re.match(r"^([01]\d|2[0-3]):([0-5]\d)$", data["reminder_time"]):
+            return jsonify({"error": "Invalid reminder time format. Use HH:MM (24-hour)"}), 400
+
+    if "reminder_frequency" in data:
+        valid_frequencies = ["daily", "weekdays", "weekends", "custom"]
+        if data["reminder_frequency"] not in valid_frequencies:
+            return jsonify({"error": "Invalid reminder frequency"}), 400
+
+    if "reminder_timezone" in data:
+        valid_timezones = [
+            "UTC", "US/Eastern", "US/Central", "US/Mountain", "US/Pacific",
+            "Europe/London", "Europe/Berlin", "Europe/Paris", "Europe/Moscow",
+            "Asia/Kolkata", "Asia/Dubai", "Asia/Singapore", "Asia/Hong_Kong",
+            "Asia/Tokyo", "Asia/Shanghai", "Australia/Sydney", "Pacific/Auckland",
+            "America/Sao_Paulo", "America/Argentina/Buenos_Aires",
+            "Africa/Cairo", "Africa/Lagos",
+        ]
+        if data["reminder_timezone"] not in valid_timezones:
+            return jsonify({"error": "Invalid or unsupported timezone"}), 400
 
     if "pin" in data and data["pin"]:
         from werkzeug.security import generate_password_hash

@@ -89,6 +89,14 @@ export interface AppSettings {
   withdrawal_default_amount: number
   withdrawal_default_note: string | null
   auto_lock_minutes: number
+  reminder_enabled: boolean
+  reminder_time: string
+  reminder_frequency: 'daily' | 'weekdays' | 'weekends' | 'custom'
+  reminder_days: string | null
+  reminder_amount: number
+  reminder_title: string
+  reminder_message: string
+  reminder_timezone: string
   created_at: string
   updated_at: string
 }
