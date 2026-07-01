@@ -1,4 +1,5 @@
-import { apiUrl } from '@/config/api'
+import { apiUrl, API_BASE_URL } from '@/config/api'
+import { platformService } from '@/services/platformService'
 
 interface RequestOptions {
   method?: string
@@ -39,6 +40,12 @@ function buildUrl(path: string, params?: Record<string, string | number | undefi
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = 'GET', body, headers = {}, params } = options
 
+  const url = buildUrl(path, params)
+  console.log('[API] Base URL:', API_BASE_URL || '(empty)')
+  console.log('[API] Request URL:', url)
+  console.log('[API] Platform:', platformService.platform)
+  console.log('[API] Method:', method)
+
   const config: RequestInit = {
     method,
     headers: {
@@ -52,7 +59,25 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     config.body = JSON.stringify(body)
   }
 
-  const response = await fetch(buildUrl(path, params), config)
+  let response: Response
+  try {
+    response = await fetch(url, config)
+  } catch (err) {
+    const message = err instanceof TypeError ? err.message : String(err)
+    console.error('[API] Network error:', message)
+    console.error('[API] URL:', url)
+    console.error('[API] Method:', method)
+    if (message === 'Failed to fetch' || message.includes('NetworkError')) {
+      throw new ApiError(
+        `Network request failed. Check:\n` +
+        `1. Backend is running at: ${API_BASE_URL || '(empty)'}\n` +
+        `2. Platform ${platformService.platform} has network access\n` +
+        `3. CORS allows origin ${window.location.origin}`,
+        0,
+      )
+    }
+    throw new ApiError(`Request failed: ${message}`, 0)
+  }
 
   if (!response.ok) {
     if (response.status === 401 && window.location.pathname !== '/login') {
@@ -60,8 +85,13 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
       localStorage.removeItem('refresh_token')
       window.location.href = '/login'
     }
-    const error = await response.json().catch(() => ({ error: 'Request failed' }))
-    throw new ApiError(error.error || 'Request failed', response.status)
+    let errorBody: { error?: string } = {}
+    try {
+      errorBody = await response.json()
+    } catch {
+      errorBody = { error: `HTTP ${response.status}: ${response.statusText}` }
+    }
+    throw new ApiError(errorBody.error || 'Request failed', response.status)
   }
 
   return response.json()

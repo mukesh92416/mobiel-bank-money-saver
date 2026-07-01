@@ -21,7 +21,7 @@ class Config:
     JWT_HEADER_NAME = "Authorization"
     JWT_HEADER_TYPE = "Bearer"
 
-    CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
+    CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173,https://localhost,capacitor://localhost").split(",")
 
     RATE_LIMIT_ENABLED = os.getenv("RATE_LIMIT_ENABLED", "true").lower() == "true"
     RATE_LIMIT_DEFAULT = os.getenv("RATE_LIMIT_DEFAULT", "100/hour")
