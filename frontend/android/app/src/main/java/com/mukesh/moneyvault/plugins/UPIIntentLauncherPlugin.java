@@ -37,11 +37,32 @@ public class UPIIntentLauncherPlugin extends Plugin {
         }
 
         try {
+            // Parse the pre-built URI to extract components for Uri.Builder reconstruction
+            Uri parsedUri = Uri.parse(upiUri);
+
+            // Rebuild URI using Uri.Builder() to match Google's recommended pattern
+            Uri.Builder builder = new Uri.Builder();
+            builder.scheme(parsedUri.getScheme());
+            builder.authority(parsedUri.getAuthority());
+
+            // Re-encode each query parameter through Uri.Builder for consistent encoding
+            for (String paramName : parsedUri.getQueryParameterNames()) {
+                String paramValue = parsedUri.getQueryParameter(paramName);
+                if (paramValue != null) {
+                    builder.appendQueryParameter(paramName, paramValue);
+                }
+            }
+
+            Uri builtUri = builder.build();
+
+            Log.d(TAG, "URI comparison:");
+            Log.d(TAG, "  Original (from backend): " + upiUri);
+            Log.d(TAG, "  Built (Uri.Builder):      " + builtUri.toString());
+            Log.d(TAG, "  URIs match: " + upiUri.equals(builtUri.toString()));
+
             Intent intent = new Intent(Intent.ACTION_VIEW);
-            intent.setData(Uri.parse(upiUri));
+            intent.setData(builtUri);
             intent.setPackage(packageName);
-            intent.addCategory(Intent.CATEGORY_BROWSABLE);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
             Log.d(TAG, "Complete intent before launch:");
             Log.d(TAG, "  Action: " + intent.getAction());
