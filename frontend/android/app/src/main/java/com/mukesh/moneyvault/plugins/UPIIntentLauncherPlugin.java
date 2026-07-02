@@ -37,15 +37,21 @@ public class UPIIntentLauncherPlugin extends Plugin {
         }
 
         try {
-            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(upiUri));
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setData(Uri.parse(upiUri));
             intent.setPackage(packageName);
+            intent.addCategory(Intent.CATEGORY_BROWSABLE);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
-            if (intent.resolveActivity(activity.getPackageManager()) == null) {
-                Log.w(TAG, "Package " + packageName + " cannot handle the intent, falling back");
-                call.reject("PACKAGE_NOT_FOUND", "Package " + packageName + " cannot handle this intent");
-                return;
-            }
+            Log.d(TAG, "Complete intent before launch:");
+            Log.d(TAG, "  Action: " + intent.getAction());
+            Log.d(TAG, "  Data URI: " + intent.getDataString());
+            Log.d(TAG, "  Package: " + intent.getPackage());
+            Log.d(TAG, "  Flags: 0x" + Integer.toHexString(intent.getFlags()));
+            Log.d(TAG, "  Categories: " + (intent.getCategories() != null ? intent.getCategories().toString() : "null"));
+            Log.d(TAG, "  Component: " + (intent.getComponent() != null ? intent.getComponent().flattenToString() : "null (resolved by system)"));
+            Log.d(TAG, "  Scheme: " + (intent.getData() != null ? intent.getData().getScheme() : "null"));
+            Log.d(TAG, "  Host: " + (intent.getData() != null ? intent.getData().getHost() : "null"));
 
             activity.startActivity(intent);
             Log.d(TAG, "Intent launched successfully for package: " + packageName);
