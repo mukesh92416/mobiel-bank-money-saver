@@ -1,3 +1,6 @@
+import { Capacitor } from '@capacitor/core'
+import { Filesystem, Directory } from '@capacitor/filesystem'
+import { Share } from '@capacitor/share'
 import { copyToClipboardNative } from '@/services/nativeClipboard'
 import { shareNative } from '@/services/nativeShare'
 import { openUrlNative, openUrlWithPackage } from '@/services/nativeAppLauncher'
@@ -51,7 +54,9 @@ export async function copyToClipboard(text: string): Promise<boolean> {
 }
 
 export async function openAppDeepLink(url: string, packageName?: string): Promise<boolean> {
-  console.log('[UPI] openAppDeepLink:', { url, packageName })
+  const platform = Capacitor.getPlatform()
+  const isNative = Capacitor.isNativePlatform()
+  console.log('[UPI] openAppDeepLink:', { url, packageName, platform, isNative })
   if (packageName) {
     const completed = await openUrlWithPackage(url, packageName)
     console.log('[UPI] Package launch completed:', completed)
@@ -72,4 +77,53 @@ export async function shareContent(data: {
   url?: string
 }): Promise<void> {
   await shareNative(data)
+}
+
+export async function downloadQRCode(dataUrl: string): Promise<void> {
+  const isNative = Capacitor.isNativePlatform()
+  const platform = Capacitor.getPlatform()
+  console.log('[QR] downloadQRCode:', { platform, isNative })
+
+  if (isNative) {
+    try {
+      const base64 = dataUrl.split(',')[1]
+      if (!base64) {
+        console.error('[QR] Invalid data URL format')
+        return
+      }
+      const filename = `MoneyVault-UPI-QR-${Date.now()}.png`
+      const result = await Filesystem.writeFile({
+        path: filename,
+        data: base64,
+        directory: Directory.Cache,
+      })
+      console.log('[QR] File written:', result.uri)
+
+      await Share.share({
+        title: 'Money Vault UPI QR',
+        text: 'UPI Payment QR Code',
+        url: result.uri,
+      })
+      console.log('[QR] Share sheet opened for:', result.uri)
+    } catch (err) {
+      console.error('[QR] Native download failed, falling back to web download:', err)
+      downloadQRWeb(dataUrl)
+    }
+  } else {
+    downloadQRWeb(dataUrl)
+  }
+}
+
+function downloadQRWeb(dataUrl: string): void {
+  try {
+    const link = document.createElement('a')
+    link.href = dataUrl
+    link.download = `MoneyVault-UPI-QR-${Date.now()}.png`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    console.log('[QR] Web download triggered')
+  } catch (err) {
+    console.error('[QR] Web download failed:', err)
+  }
 }

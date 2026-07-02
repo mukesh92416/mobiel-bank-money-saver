@@ -1,12 +1,23 @@
 import { AppLauncher } from '@capacitor/app-launcher'
+import { Capacitor } from '@capacitor/core'
 import { platformService } from './platformService'
 import { UPIIntentLauncher } from '@/plugins/upi-intent-launcher'
 
+function logPlatform(): string {
+  const p = Capacitor.getPlatform()
+  const native = Capacitor.isNativePlatform()
+  const platform = `platform=${p}, isNative=${native}, userAgent=${navigator?.userAgent?.slice?.(0, 80) ?? 'unknown'}`
+  console.log('[AppLauncher] Platform detection:', platform)
+  return platform
+}
+
 export async function openUrlNative(url: string): Promise<void> {
+  const plat = logPlatform()
+  console.log('[AppLauncher] openUrlNative URL:', url)
   if (platformService.isNative) {
     try {
       const { completed } = await AppLauncher.openUrl({ url })
-      console.log('[AppLauncher] openUrlNative result:', { url, completed })
+      console.log('[AppLauncher] openUrlNative result:', { url, completed, plat })
       if (!completed) {
         console.warn('[AppLauncher] No app could handle the URL:', url)
       }
@@ -25,7 +36,8 @@ export async function openUrlNative(url: string): Promise<void> {
 }
 
 export async function openUrlWithPackage(url: string, packageName: string): Promise<boolean> {
-  console.log('[AppLauncher] openUrlWithPackage:', { url, packageName, platform: platformService.platform })
+  const plat = logPlatform()
+  console.log('[AppLauncher] openUrlWithPackage:', { url, packageName, platform: platformService.platform, plat })
   if (platformService.isAndroid) {
     try {
       await UPIIntentLauncher.launch({ packageName, upiUri: url })
@@ -36,6 +48,7 @@ export async function openUrlWithPackage(url: string, packageName: string): Prom
       return false
     }
   }
+  console.log('[AppLauncher] Not Android, falling back to openUrlNative')
   await openUrlNative(url)
   return true
 }

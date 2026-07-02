@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/Badge'
 import { cn } from '@/utils/cn'
 import { formatCurrency } from '@/utils/format'
 import { staggerContainer, staggerItem, scaleIn } from '@/animations'
-import { shareContent } from '@/utils/upi'
+import { shareContent, downloadQRCode } from '@/utils/upi'
 
 interface UPIQrCodeProps {
   qrContent: string
@@ -41,12 +41,8 @@ export function UPIQrCode({ qrContent, amount, profile, className }: UPIQrCodePr
 
   const handleDownload = useCallback(() => {
     if (!qrSrc) return
-    const link = document.createElement('a')
-    link.href = qrSrc
-    link.download = `upi-qr-${Date.now()}.png`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+    console.log('[UPIQrCode] handleDownload triggered')
+    downloadQRCode(qrSrc)
   }, [qrSrc])
 
   const handleShare = useCallback(async () => {

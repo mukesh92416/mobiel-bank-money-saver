@@ -1,9 +1,10 @@
 import { useCallback, useState } from 'react'
+import QRCodeUtil from 'qrcode'
 import { QRCodeSVG } from 'qrcode.react'
 import { Download, Copy, Check, Link } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { formatCurrency } from '@/utils/format'
-import { copyToClipboard } from '@/utils/upi'
+import { copyToClipboard, downloadQRCode } from '@/utils/upi'
 import { cn } from '@/utils/cn'
 
 interface PaymentQRDialogProps {
@@ -44,27 +45,20 @@ export function PaymentQRDialog({
     }
   }, [upiUri])
 
-  const handleDownload = useCallback(() => {
-    const svg = document.getElementById('payment-qr-svg')
-    if (!svg) return
-    const svgData = new XMLSerializer().serializeToString(svg)
-    const canvas = document.createElement('canvas')
-    const ctx = canvas.getContext('2d')
-    const img = new window.Image()
-    img.onload = () => {
-      canvas.width = img.width * 4
-      canvas.height = img.height * 4
-      ctx?.scale(4, 4)
-      ctx?.drawImage(img, 0, 0)
-      const link = document.createElement('a')
-      link.download = `payment-qr-${Date.now()}.png`
-      link.href = canvas.toDataURL('image/png')
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
+  const handleDownload = useCallback(async () => {
+    console.log('[PaymentQRDialog] handleDownload triggered')
+    try {
+      const dataUrl = await QRCodeUtil.toDataURL(upiUri, {
+        width: 600,
+        margin: 2,
+        color: { dark: '#111827', light: '#ffffff' },
+      })
+      console.log('[PaymentQRDialog] QR generated as data URL')
+      await downloadQRCode(dataUrl)
+    } catch (err) {
+      console.error('[PaymentQRDialog] download failed:', err)
     }
-    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)))
-  }, [])
+  }, [upiUri])
 
   return (
     <Modal open={open} onClose={onClose} title="Scan to Pay" className="max-w-sm">
