@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Scanner, useDevices } from '@yudiel/react-qr-scanner'
 import type { IDetectedBarcode } from '@yudiel/react-qr-scanner'
@@ -8,6 +8,7 @@ import {
   QrCode,
   Check,
   AlertTriangle,
+  RefreshCw,
 } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
@@ -30,29 +31,59 @@ export function UPIImportDialog({ open, onClose, onImport }: UPIImportDialogProp
   const [scanError, setScanError] = useState<string | null>(null)
   const [scanResult, setScanResult] = useState<ParsedUpiUri | null>(null)
   const [selectedDevice, setSelectedDevice] = useState<string>('')
+  const [scannerKey, setScannerKey] = useState(0)
   const devices = useDevices()
+
+  useEffect(() => {
+    console.log('[QR Import] Dialog render:', { open, tab, scanResult: !!scanResult, scanError, scannerKey, devices: devices.length })
+  }, [open, tab, scanResult, scanError, scannerKey, devices.length])
+
+  useEffect(() => {
+    if (open) console.log('[QR Import] Dialog opened')
+  }, [open])
 
   const handleScan = useCallback((detectedCodes: IDetectedBarcode[]) => {
     const rawValue = detectedCodes[0]?.rawValue
+    console.log('[QR Import] Scanner detected:', { rawValue, codes: detectedCodes.length })
     if (!rawValue) return
     try {
       const parsed = parseUpiUri(rawValue)
+      console.log('[QR Import] Parse success:', parsed)
       setScanResult(parsed)
       setScanError(null)
     } catch (e) {
-      setScanError(e instanceof Error ? e.message : 'Failed to parse QR code')
+      const errMsg = e instanceof Error ? e.message : 'Failed to parse QR code'
+      console.log('[QR Import] Parse error:', errMsg)
+      setScanError(errMsg)
       setScanResult(null)
     }
   }, [])
 
   const handleScanError = useCallback((error: unknown) => {
-    const msg = error instanceof Error ? error.message : 'Camera error'
-    if (msg.includes('Permission')) {
-      setScanError('Camera permission denied. Please allow camera access in your browser settings.')
+    console.log('[QR Import] Scanner error:', error)
+    const isScannerError = error !== null && typeof error === 'object' && 'kind' in error
+    let msg: string
+    if (isScannerError) {
+      const se = error as { kind: string; message: string }
+      msg = se.message || se.kind
+      if (se.kind === 'permission-denied') {
+        msg = 'Camera permission denied. Please allow camera access in your browser or device settings.'
+      }
+    } else if (error instanceof Error) {
+      msg = error.message
     } else {
-      setScanError(msg)
+      msg = 'Camera error'
     }
+    console.log('[QR Import] Scanner error msg:', msg)
+    setScanError(msg)
   }, [])
+
+  const handleRetry = () => {
+    console.log('[QR Import] Retry clicked')
+    setScanError(null)
+    setScanResult(null)
+    setScannerKey(k => k + 1)
+  }
 
   const handlePasteParse = () => {
     setPasteError(null)
@@ -68,12 +99,14 @@ export function UPIImportDialog({ open, onClose, onImport }: UPIImportDialogProp
   const handleImport = () => {
     const data = tab === 'scan' ? scanResult : pasteResult
     if (data) {
+      console.log('[QR Import] Importing data:', data)
       onImport(data)
       resetState()
     }
   }
 
   const handleClose = () => {
+    console.log('[QR Import] Dialog closing')
     resetState()
     onClose()
   }
@@ -84,6 +117,7 @@ export function UPIImportDialog({ open, onClose, onImport }: UPIImportDialogProp
     setPasteError(null)
     setScanError(null)
     setScanResult(null)
+    setScannerKey(k => k + 1)
     setTab('scan')
   }
 
@@ -131,18 +165,12 @@ export function UPIImportDialog({ open, onClose, onImport }: UPIImportDialogProp
                 </div>
                 <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">QR Code Scanned Successfully</p>
               </div>
-            ) : scanError ? (
-              <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="size-5 text-red-500 shrink-0 mt-0.5" />
-                  <p className="text-sm text-red-700 dark:text-red-300">{scanError}</p>
-                </div>
-              </div>
             ) : null}
 
             {!scanResult && !scanError && (
               <div className="relative overflow-hidden rounded-xl bg-black aspect-[3/4] max-h-72">
                 <Scanner
+                  key={scannerKey}
                   onScan={handleScan}
                   onError={handleScanError}
                   formats={['qr_code']}
@@ -150,6 +178,23 @@ export function UPIImportDialog({ open, onClose, onImport }: UPIImportDialogProp
                   styles={{ container: { width: '100%', height: '100%' } }}
                 />
                 <div className="absolute inset-0 border-2 border-emerald-400/50 rounded-xl pointer-events-none" />
+              </div>
+            )}
+
+            {scanError && (
+              <div className="flex flex-col items-center gap-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4">
+                <div className="flex items-start gap-3 w-full">
+                  <AlertTriangle className="size-5 text-red-500 shrink-0 mt-0.5" />
+                  <p className="text-sm text-red-700 dark:text-red-300">{scanError}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRetry}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/60 transition-colors"
+                >
+                  <RefreshCw className="size-3.5" />
+                  Retry Camera
+                </button>
               </div>
             )}
 

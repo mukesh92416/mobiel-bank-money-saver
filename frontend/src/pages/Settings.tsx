@@ -202,12 +202,17 @@ export default function Settings() {
   }
 
   function handleDepositImport(data: ParsedUpiUri) {
-    setUpiForm(prev => ({
-      ...prev,
-      upi_id: data.pa,
-      upi_name: data.pn ? decodeURIComponent(data.pn) : prev.upi_name,
-      default_save_note: data.tn ? decodeURIComponent(data.tn) : prev.default_save_note,
-    }))
+    console.log('[Settings] Deposit import:', data)
+    setUpiForm(prev => {
+      const next = {
+        ...prev,
+        upi_id: data.pa,
+        upi_name: data.pn ? decodeURIComponent(data.pn) : prev.upi_name,
+        default_save_note: data.tn ? decodeURIComponent(data.tn) : prev.default_save_note,
+      }
+      console.log('[Settings] New UPI form state:', next)
+      return next
+    })
     setShowDepositImport(false)
   }
 

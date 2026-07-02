@@ -24,12 +24,12 @@ export interface ParsedUpiUri {
 export function parseUpiUri(uri: string): ParsedUpiUri {
   const trimmed = uri.trim()
   if (!trimmed.toLowerCase().startsWith('upi://pay')) {
-    throw new Error('Invalid UPI URI. Must start with upi://pay')
+    throw new Error('This is not a valid UPI QR code.')
   }
 
   const queryStart = trimmed.indexOf('?')
   if (queryStart === -1) {
-    throw new Error('Invalid UPI URI. No query parameters found.')
+    throw new Error('This is not a valid UPI QR code.')
   }
 
   const query = trimmed.slice(queryStart + 1)
@@ -37,7 +37,7 @@ export function parseUpiUri(uri: string): ParsedUpiUri {
 
   const pa = params.get('pa')
   if (!pa) {
-    throw new Error('Missing required parameter: pa (Payee VPA)')
+    throw new Error('This is not a valid UPI QR code.')
   }
 
   return {
